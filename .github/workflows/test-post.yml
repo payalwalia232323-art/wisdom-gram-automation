@@ -24,268 +24,513 @@ jobs:
           sudo apt-get install -y ffmpeg
           pip install pillow cloudinary requests
 
-      - name: Select next proverb
+      - name: Select next wisdom saying
         id: proverb
         run: |
           python - <<'PY'
           import json
           import os
 
-          proverbs = [
+          sayings = [
               {
-                  "proverb": "The axe forgets, but the tree remembers.",
-                  "meaning": "Some wounds heal. Some simply teach you who caused them.",
-                  "search": "old tree forest nature"
+                  "text": "A tree that survives the strongest storms does not remain the same tree. It becomes stronger because of what it survived.",
+                  "meaning": "Hard experiences can change you without destroying you.",
+                  "search": "strong tree storm forest"
               },
               {
-                  "proverb": "A smooth sea never made a skilled sailor.",
-                  "meaning": "Difficult experiences build the strength that comfort never can.",
-                  "search": "sailor ocean storm sea"
+                  "text": "The river never argues with the mountain. It simply keeps moving. And eventually, it finds its way around it.",
+                  "meaning": "Persistence can overcome obstacles that force cannot.",
+                  "search": "river mountain landscape"
               },
               {
-                  "proverb": "What goes around comes around.",
-                  "meaning": "The way you treat others often finds its way back to you.",
-                  "search": "circle road journey nature"
+                  "text": "Some doors close without warning. Do not spend your life knocking on them. There may be a better door waiting behind you.",
+                  "meaning": "Not every ending deserves another attempt.",
+                  "search": "door light opportunity"
               },
               {
-                  "proverb": "Actions speak louder than words.",
-                  "meaning": "What you do reveals more about you than what you promise.",
-                  "search": "person action walking road"
+                  "text": "A seed spends its darkest days underground. What looks like burial from the outside may actually be the beginning of growth.",
+                  "meaning": "Difficult seasons can be the beginning of transformation.",
+                  "search": "seed planting soil growth"
               },
               {
-                  "proverb": "A stitch in time saves nine.",
-                  "meaning": "Small problems are easier to solve before they become big ones.",
-                  "search": "repair hands fixing object"
+                  "text": "The person who learns to walk alone will never be afraid of an empty road. They will simply choose where to go next.",
+                  "meaning": "Independence makes uncertainty less frightening.",
+                  "search": "person walking road alone"
               },
               {
-                  "proverb": "Where there is a will, there is a way.",
-                  "meaning": "Determination can find a path where none seems to exist.",
-                  "search": "mountain path sunrise journey"
+                  "text": "You cannot change the wind. But you can change your sails. Wisdom begins when you understand the difference.",
+                  "meaning": "Focus on what you can control.",
+                  "search": "sailboat ocean wind"
               },
               {
-                  "proverb": "Rome wasn't built in a day.",
-                  "meaning": "Anything meaningful takes patience, consistency, and time.",
-                  "search": "building architecture sunrise city"
+                  "text": "A wound may be caused by another person. But healing is a journey that only you can choose to begin.",
+                  "meaning": "Others may cause pain, but your healing is your responsibility.",
+                  "search": "person peaceful nature healing"
               },
               {
-                  "proverb": "The grass is always greener on the other side.",
-                  "meaning": "We often overestimate what others have and underestimate what we already have.",
-                  "search": "green grass field landscape"
+                  "text": "The strongest walls are not always built from stone. Sometimes they are built from boundaries learned through painful experience.",
+                  "meaning": "Healthy boundaries often come from difficult lessons.",
+                  "search": "stone wall person silhouette"
               },
               {
-                  "proverb": "Don't count your chickens before they hatch.",
-                  "meaning": "Hope for success, but don't treat an uncertain outcome as guaranteed.",
-                  "search": "farm morning nature eggs"
+                  "text": "Do not confuse someone's silence with weakness. Some people stopped explaining themselves when they realized they were never being heard.",
+                  "meaning": "Silence can be a sign of self-respect, not weakness.",
+                  "search": "silent person portrait solitude"
               },
               {
-                  "proverb": "You reap what you sow.",
-                  "meaning": "Your choices and habits eventually shape the results you receive.",
-                  "search": "farmer field planting seeds"
+                  "text": "A slow journey is still a journey. Do not despise small steps just because someone else is already running.",
+                  "meaning": "Your pace does not determine your worth.",
+                  "search": "slow journey road mountains"
               },
               {
-                  "proverb": "Every cloud has a silver lining.",
-                  "meaning": "Even difficult situations can contain an unexpected opportunity.",
-                  "search": "clouds sunlight landscape"
+                  "text": "The candle loses nothing by helping another candle burn. Knowledge becomes more valuable when it is shared.",
+                  "meaning": "Sharing wisdom does not reduce what you possess.",
+                  "search": "candle darkness light"
               },
               {
-                  "proverb": "Slow and steady wins the race.",
-                  "meaning": "Consistent progress often beats short bursts of motivation.",
-                  "search": "tortoise nature path slow journey"
+                  "text": "You can water a dead plant every day and still watch it remain lifeless. Not everything deserves another chance.",
+                  "meaning": "Knowing when to let go is also wisdom.",
+                  "search": "dead plant garden"
               },
               {
-                  "proverb": "Knowledge is power.",
-                  "meaning": "Understanding gives you better choices, better judgment, and greater control.",
-                  "search": "books library reading wisdom"
+                  "text": "Some people leave your life because their chapter is finished. Not every ending needs an enemy.",
+                  "meaning": "Some relationships simply reach their natural ending.",
+                  "search": "person walking away sunset"
               },
               {
-                  "proverb": "Better late than never.",
-                  "meaning": "Starting late is still better than never starting at all.",
-                  "search": "sunrise road beginning journey"
+                  "text": "The older you become, the more you realize that peace is worth more than winning every argument.",
+                  "meaning": "Protecting your peace can matter more than proving yourself right.",
+                  "search": "peaceful lake sunset"
               },
               {
-                  "proverb": "Look before you leap.",
-                  "meaning": "Think about the consequences before making an important decision.",
-                  "search": "cliff mountain decision landscape"
+                  "text": "A person who fears failure often fears trying more than losing. But every master was once a beginner.",
+                  "meaning": "Fear of failure should not stop you from starting.",
+                  "search": "beginner athlete training"
               },
               {
-                  "proverb": "The early bird catches the worm.",
-                  "meaning": "Being prepared and acting early can create opportunities others miss.",
-                  "search": "bird sunrise morning nature"
+                  "text": "The mountain does not become smaller because you are tired. Sometimes you simply need to rest before climbing again.",
+                  "meaning": "Rest is part of progress, not the opposite of it.",
+                  "search": "mountain climber resting"
               },
               {
-                  "proverb": "A journey of a thousand miles begins with a single step.",
-                  "meaning": "Big achievements begin when you take the first small action.",
+                  "text": "Do not judge the seed by the tree it has not yet become. Growth takes time that cannot be rushed.",
+                  "meaning": "Potential needs patience before it becomes visible.",
+                  "search": "seedling tree growth"
+              },
+              {
+                  "text": "Some lessons arrive as blessings. Others arrive disguised as pain. Both can change your life.",
+                  "meaning": "Good and difficult experiences can both teach you.",
+                  "search": "person reflection sunset"
+              },
+              {
+                  "text": "The person who constantly compares their life will never notice how far they have already come.",
+                  "meaning": "Comparison can hide your own progress.",
+                  "search": "person looking horizon"
+              },
+              {
+                  "text": "You cannot carry yesterday into every tomorrow. Some things must be left behind to move forward.",
+                  "meaning": "Progress sometimes requires releasing the past.",
+                  "search": "road sunset leaving behind"
+              },
+              {
+                  "text": "A calm mind sees doors that a frightened mind mistakes for walls.",
+                  "meaning": "Fear can hide opportunities that clarity makes visible.",
+                  "search": "door light dark room"
+              },
+              {
+                  "text": "Not every battle deserves your sword. Sometimes walking away is the highest form of wisdom.",
+                  "meaning": "Choosing peace can be stronger than choosing conflict.",
+                  "search": "person walking away battlefield"
+              },
+              {
+                  "text": "People may remember your words for a moment. They remember how you made them feel for much longer.",
+                  "meaning": "Character is often remembered more than conversation.",
+                  "search": "people friendship emotional"
+              },
+              {
+                  "text": "If you keep chasing everyone's approval, you will eventually lose the person whose approval matters most — yourself.",
+                  "meaning": "Self-respect should not depend on everyone's opinion.",
+                  "search": "person mirror self reflection"
+              },
+              {
+                  "text": "The hardest distance to travel is sometimes the distance between knowing and doing.",
+                  "meaning": "Knowing what to do means little without action.",
+                  "search": "person starting journey road"
+              },
+              {
+                  "text": "A broken clock is right twice a day. Do not mistake occasional success for consistent wisdom.",
+                  "meaning": "Being right sometimes does not make someone consistently wise.",
+                  "search": "old clock time"
+              },
+              {
+                  "text": "A person can have everything and still feel empty. Possessions can fill a room, but not always a life.",
+                  "meaning": "Material wealth alone cannot guarantee fulfillment.",
+                  "search": "luxury empty room solitude"
+              },
+              {
+                  "text": "The quietest person in the room may have fought the loudest battles before they ever walked through the door.",
+                  "meaning": "You rarely know what another person has survived.",
+                  "search": "person silhouette dark room"
+              },
+              {
+                  "text": "You do not need to answer every insult. Some words become powerless when they receive no response.",
+                  "meaning": "Not every provocation deserves your attention.",
+                  "search": "calm person portrait"
+              },
+              {
+                  "text": "The past can explain who you became. It does not have to decide who you become next.",
+                  "meaning": "Your history influences you, but it does not have to control your future.",
+                  "search": "road future sunrise"
+              },
+              {
+                  "text": "A storm can destroy a forest. But it can also clear the path for something new to grow.",
+                  "meaning": "Destruction can sometimes create room for renewal.",
+                  "search": "forest storm sunlight"
+              },
+              {
+                  "text": "Do not wait until you feel ready. Readiness often appears after you take the first step.",
+                  "meaning": "Action often creates confidence.",
+                  "search": "person first step road"
+              },
+              {
+                  "text": "The best investment you can make is becoming someone you would be proud to live with.",
+                  "meaning": "Invest in your character, not only your possessions.",
+                  "search": "person sunrise reflection"
+              },
+              {
+                  "text": "Some people only value your presence after experiencing your absence. Do not disappear to prove your worth.",
+                  "meaning": "Your value should not depend on someone else's realization.",
+                  "search": "empty chair sunset solitude"
+              },
+              {
+                  "text": "A person who knows their destination does not need to run every mile. Consistency will eventually beat urgency.",
+                  "meaning": "Steady progress is often more powerful than rushing.",
                   "search": "long road traveler mountains"
               },
               {
-                  "proverb": "Empty vessels make the most noise.",
-                  "meaning": "People with little substance often feel the greatest need to prove themselves.",
-                  "search": "empty room person silhouette"
+                  "text": "You can forgive someone without giving them access to you again. Peace does not require forgetting.",
+                  "meaning": "Forgiveness and boundaries can exist together.",
+                  "search": "peaceful person sunset"
               },
               {
-                  "proverb": "Silence is golden.",
-                  "meaning": "Knowing when not to speak can be more valuable than having the last word.",
-                  "search": "quiet forest peaceful lake"
+                  "text": "The strongest trees grow deep roots before they grow high branches. Build your foundation before chasing attention.",
+                  "meaning": "Strong foundations matter more than quick recognition.",
+                  "search": "deep roots strong tree"
               },
               {
-                  "proverb": "The pen is mightier than the sword.",
-                  "meaning": "Ideas and words can create changes that force cannot.",
-                  "search": "writing desk pen dramatic light"
+                  "text": "If you keep returning to the same fire, do not blame the flames for burning you again.",
+                  "meaning": "Repeated choices can create repeated pain.",
+                  "search": "fire person distance"
               },
               {
-                  "proverb": "If you want something done right, do it yourself.",
-                  "meaning": "For important work, personal responsibility can matter more than delegation.",
-                  "search": "person working alone craft"
+                  "text": "Sometimes the lesson is not to hold on tighter. Sometimes it is learning when to let go.",
+                  "meaning": "Letting go can be an act of wisdom.",
+                  "search": "hands letting go sunset"
               },
               {
-                  "proverb": "Necessity is the mother of invention.",
-                  "meaning": "Constraints often push people to discover creative solutions.",
-                  "search": "inventor workshop creative"
+                  "text": "Your future self is watching what you choose today. Make decisions they will thank you for.",
+                  "meaning": "Today's choices shape tomorrow's life.",
+                  "search": "person future sunrise"
               },
               {
-                  "proverb": "No pain, no gain.",
-                  "meaning": "Meaningful improvement usually requires effort, discomfort, and persistence.",
+                  "text": "A person who controls their emotions does not become emotionless. They simply stop letting every feeling control them.",
+                  "meaning": "Emotional strength means responding instead of reacting.",
+                  "search": "calm person meditation"
+              },
+              {
+                  "text": "You cannot pour from an empty cup forever. Taking care of yourself is not selfish when it keeps you standing.",
+                  "meaning": "Self-care protects your ability to keep going.",
+                  "search": "cup water peaceful morning"
+              },
+              {
+                  "text": "The road may look longer because you are walking it alone. That does not mean you are walking the wrong road.",
+                  "meaning": "Being alone does not mean you are lost.",
+                  "search": "lonely road traveler mountains"
+              },
+              {
+                  "text": "Some opportunities look like failures until you see where they eventually lead.",
+                  "meaning": "A setback can become the beginning of something better.",
+                  "search": "road crossroads sunset"
+              },
+              {
+                  "text": "A wise person listens not only to understand others, but also to discover what they themselves missed.",
+                  "meaning": "Listening can reveal what speaking cannot.",
+                  "search": "person listening conversation"
+              },
+              {
+                  "text": "Do not let one bad chapter convince you that the entire story is ruined.",
+                  "meaning": "One difficult period does not define your whole life.",
+                  "search": "open book sunrise"
+              },
+              {
+                  "text": "The more you chase happiness, the harder it can become to hold. Sometimes happiness grows quietly while you build a meaningful life.",
+                  "meaning": "Meaningful living often creates happiness naturally.",
+                  "search": "peaceful life nature happiness"
+              },
+              {
+                  "text": "A person who has nothing to prove often has the most freedom.",
+                  "meaning": "Freedom grows when you stop performing for others.",
+                  "search": "person mountain freedom"
+              },
+              {
+                  "text": "Your habits are writing a story that your future will eventually have to live.",
+                  "meaning": "Small repeated choices shape your future.",
+                  "search": "daily routine sunrise journal"
+              },
+              {
+                  "text": "You cannot become a different person while protecting every habit that created the old one.",
+                  "meaning": "Real change requires changing the patterns that hold you back.",
+                  "search": "person transformation road"
+              },
+              {
+                  "text": "A mirror shows your face. Life shows your character when nobody is watching.",
+                  "meaning": "Character is revealed by what you do without an audience.",
+                  "search": "mirror person reflection"
+              },
+              {
+                  "text": "Do not measure your progress by how far someone else has travelled. Their starting point was never yours.",
+                  "meaning": "Everyone begins from a different place.",
+                  "search": "different paths journey"
+              },
+              {
+                  "text": "Some people teach you love. Others teach you boundaries. Both lessons are valuable.",
+                  "meaning": "Every meaningful relationship can teach you something.",
+                  "search": "two people friendship sunset"
+              },
+              {
+                  "text": "The moment you stop learning is often the moment you start falling behind.",
+                  "meaning": "Growth requires staying curious.",
+                  "search": "books learning library"
+              },
+              {
+                  "text": "A peaceful life is not a life without problems. It is a life where problems no longer control your mind.",
+                  "meaning": "Peace comes from how you respond to problems.",
+                  "search": "peaceful lake meditation"
+              },
+              {
+                  "text": "You may not control what happens to you. But you still have a choice about what happens inside you.",
+                  "meaning": "Your inner response is often within your control.",
+                  "search": "meditation mountains calm"
+              },
+              {
+                  "text": "The strongest apology is sometimes a changed behavior rather than another explanation.",
+                  "meaning": "Real change is shown through actions.",
+                  "search": "person walking changing direction"
+              },
+              {
+                  "text": "Do not mistake familiarity for destiny. Something being part of your life for years does not mean it belongs there forever.",
+                  "meaning": "Long familiarity does not always mean something is right for you.",
+                  "search": "road crossroads leaving"
+              },
+              {
+                  "text": "A person who learns from every mistake never truly wastes a mistake.",
+                  "meaning": "A mistake becomes valuable when it teaches you something.",
+                  "search": "person reflection lesson"
+              },
+              {
+                  "text": "If you want a different life, eventually you must become comfortable doing things differently.",
+                  "meaning": "New results require new behaviors.",
+                  "search": "new path road change"
+              },
+              {
+                  "text": "The fruit appears after the roots have worked in silence. Do not expect visible results from invisible effort overnight.",
+                  "meaning": "Important growth often happens before anyone can see it.",
+                  "search": "fruit tree roots growth"
+              },
+              {
+                  "text": "Sometimes people doubt your dream because they cannot see what you see. Do not make their vision your limitation.",
+                  "meaning": "Someone else's doubt does not determine your potential.",
+                  "search": "dreamer mountain horizon"
+              },
+              {
+                  "text": "The easiest person to deceive is often the person who desperately wants something to be true.",
+                  "meaning": "Strong desire can make judgment weaker.",
+                  "search": "person reflection illusion"
+              },
+              {
+                  "text": "You can lose money and earn it again. You can lose time and never buy it back. Spend both wisely.",
+                  "meaning": "Time is a resource that cannot be recovered.",
+                  "search": "clock money time"
+              },
+              {
+                  "text": "A rich life is not measured only by money. It is also measured by time, health, freedom, and the people you can share it with.",
+                  "meaning": "True wealth includes things money cannot replace.",
+                  "search": "happy family nature sunset"
+              },
+              {
+                  "text": "Do not build your identity around what happened to you. Build it around what you choose to do next.",
+                  "meaning": "Your future choices matter more than your past labels.",
+                  "search": "person walking sunrise"
+              },
+              {
+                  "text": "The person who keeps moving forward eventually leaves behind the version of themselves that once felt stuck.",
+                  "meaning": "Progress slowly transforms who you are.",
+                  "search": "person walking mountains"
+              },
+              {
+                  "text": "Sometimes distance reveals what closeness hides. You understand people differently when you stop depending on their presence.",
+                  "meaning": "Distance can bring clarity to relationships.",
+                  "search": "person alone ocean horizon"
+              },
+              {
+                  "text": "A closed mouth can protect a peaceful mind. Not every thought deserves to become a conversation.",
+                  "meaning": "Knowing when to stay silent is a form of wisdom.",
+                  "search": "silent meditation peaceful"
+              },
+              {
+                  "text": "The world will keep moving whether you are ready or not. Start before another year passes waiting.",
+                  "meaning": "Waiting for perfect conditions can waste valuable time.",
+                  "search": "clock road sunrise"
+              },
+              {
+                  "text": "A small habit repeated for years can change a life more dramatically than a powerful decision made once.",
+                  "meaning": "Consistency creates lasting transformation.",
+                  "search": "daily habits journal sunrise"
+              },
+              {
+                  "text": "You do not need everyone to understand you. You only need enough courage to understand yourself.",
+                  "meaning": "Self-understanding matters more than universal approval.",
+                  "search": "person mirror solitude"
+              },
+              {
+                  "text": "The person who masters patience often sees opportunities that impatience walks straight past.",
+                  "meaning": "Patience can reveal possibilities that haste misses.",
+                  "search": "person waiting sunrise"
+              },
+              {
+                  "text": "Some endings feel like punishment until you discover they were actually protection.",
+                  "meaning": "An ending can sometimes save you from something worse.",
+                  "search": "closed door light"
+              },
+              {
+                  "text": "Do not let temporary emotions make permanent decisions for your future.",
+                  "meaning": "Pause before making life-changing choices in emotional moments.",
+                  "search": "person thinking sunset"
+              },
+              {
+                  "text": "The mind grows like a garden. Whatever you repeatedly plant there will eventually influence what grows.",
+                  "meaning": "Your repeated thoughts shape your mindset.",
+                  "search": "garden planting seeds"
+              },
+              {
+                  "text": "You cannot heal in the same place where you keep reopening the wound. Sometimes healing requires distance.",
+                  "meaning": "Sometimes stepping away is necessary for recovery and peace.",
+                  "search": "person walking away sunset"
+              },
+              {
+                  "text": "A person who is comfortable alone is harder to manipulate with the fear of being left.",
+                  "meaning": "Self-sufficiency makes you less dependent on unhealthy relationships.",
+                  "search": "person alone mountain freedom"
+              },
+              {
+                  "text": "Success often looks sudden from the outside. Behind it are usually years that nobody bothered to notice.",
+                  "meaning": "Visible success often hides years of invisible effort.",
                   "search": "athlete training sunrise"
               },
               {
-                  "proverb": "Fortune favors the bold.",
-                  "meaning": "Courageous action can create opportunities that hesitation misses.",
-                  "search": "mountain climber adventure"
+                  "text": "Do not chase a life that looks impressive to strangers but feels empty when you are alone.",
+                  "meaning": "Build a life that feels meaningful, not merely impressive.",
+                  "search": "luxury city lonely person"
               },
               {
-                  "proverb": "Honesty is the best policy.",
-                  "meaning": "Truth may be difficult in the moment, but it builds lasting trust.",
-                  "search": "person reflection honest thoughtful"
+                  "text": "The strongest revenge is not destruction. It is building a life that no longer needs revenge.",
+                  "meaning": "Moving forward is more powerful than staying trapped in anger.",
+                  "search": "person walking sunrise freedom"
               },
               {
-                  "proverb": "Time heals all wounds.",
-                  "meaning": "Distance and time can soften pain and help us see life differently.",
-                  "search": "sunset peaceful lake healing"
+                  "text": "You will outgrow people, places, and habits. Do not call it betrayal when life is simply asking you to evolve.",
+                  "meaning": "Growth naturally changes what fits your life.",
+                  "search": "person leaving city journey"
               },
               {
-                  "proverb": "The best things in life are free.",
-                  "meaning": "Some of life's greatest experiences cannot be bought with money.",
-                  "search": "family nature sunset happiness"
+                  "text": "A wise person knows when to speak. A wiser person knows when silence will protect more than words.",
+                  "meaning": "Wisdom includes knowing when not to speak.",
+                  "search": "silent person nature"
               },
               {
-                  "proverb": "A bird in the hand is worth two in the bush.",
-                  "meaning": "A certain opportunity can be more valuable than a risky promise of something better.",
-                  "search": "bird hand nature"
+                  "text": "The person who fears starting small may spend years dreaming about something they could have already begun.",
+                  "meaning": "Starting imperfectly is better than waiting forever.",
+                  "search": "first step road beginning"
               },
               {
-                  "proverb": "Don't put all your eggs in one basket.",
-                  "meaning": "Spreading your risks can protect you when one plan fails.",
-                  "search": "baskets eggs farm"
+                  "text": "Your attention is one of your greatest possessions. Where you place it every day is where your life slowly goes.",
+                  "meaning": "Your attention shapes your life more than you realize.",
+                  "search": "person phone focus sunrise"
               },
               {
-                  "proverb": "The darkest hour is just before the dawn.",
-                  "meaning": "The hardest moment may come just before circumstances begin to improve.",
-                  "search": "dark dawn sunrise horizon"
+                  "text": "Do not let the fear of losing prevent you from experiencing what could have been gained.",
+                  "meaning": "Fear can cost you opportunities before you even try.",
+                  "search": "person taking leap mountain"
               },
               {
-                  "proverb": "A chain is only as strong as its weakest link.",
-                  "meaning": "A system is limited by the part that is least prepared or reliable.",
-                  "search": "metal chain closeup strength"
+                  "text": "Some people want the reward without becoming the person capable of carrying it.",
+                  "meaning": "Success requires becoming ready for its responsibilities.",
+                  "search": "person climbing mountain"
               },
               {
-                  "proverb": "You cannot judge a book by its cover.",
-                  "meaning": "Appearances reveal very little about a person's true character.",
-                  "search": "old books library mysterious"
+                  "text": "If you keep blaming the road, you may never notice that you are holding the map upside down.",
+                  "meaning": "Sometimes the problem is our perspective, not the path.",
+                  "search": "map road traveler"
               },
               {
-                  "proverb": "All that glitters is not gold.",
-                  "meaning": "Something attractive on the surface may have little real value.",
-                  "search": "gold reflection luxury illusion"
+                  "text": "A difficult season does not define your entire life. Even winter eventually makes room for spring.",
+                  "meaning": "Hard times are temporary, even when they feel permanent.",
+                  "search": "winter spring nature"
               },
               {
-                  "proverb": "When one door closes, another opens.",
-                  "meaning": "An ending can create an opportunity you could not see before.",
-                  "search": "open door light opportunity"
+                  "text": "The person you become while chasing the goal may be more valuable than the goal itself.",
+                  "meaning": "Growth during the journey can be more important than the destination.",
+                  "search": "mountain journey sunrise"
               },
               {
-                  "proverb": "Practice makes perfect.",
-                  "meaning": "Repeated effort turns weakness into skill.",
-                  "search": "musician practice instrument"
+                  "text": "Do not keep explaining your worth to people committed to misunderstanding you.",
+                  "meaning": "You do not need to prove yourself to everyone.",
+                  "search": "person walking away confidence"
               },
               {
-                  "proverb": "United we stand, divided we fall.",
-                  "meaning": "Cooperation creates strength that individuals may not have alone.",
-                  "search": "people teamwork mountain"
+                  "text": "Sometimes growth feels like loneliness because you are leaving behind people who were comfortable with your old self.",
+                  "meaning": "Personal growth can change relationships.",
+                  "search": "person alone road sunset"
               },
               {
-                  "proverb": "A fool and his money are soon parted.",
-                  "meaning": "Careless decisions can make money disappear surprisingly quickly.",
-                  "search": "money spending financial decision"
+                  "text": "A mistake becomes expensive when you pay for it twice by refusing to learn from it.",
+                  "meaning": "Repeating the same mistake makes the lesson more costly.",
+                  "search": "person learning reflection"
               },
               {
-                  "proverb": "Too many cooks spoil the broth.",
-                  "meaning": "Too much interference can make a simple task harder and less effective.",
-                  "search": "cooking kitchen teamwork"
+                  "text": "The world rewards action more often than intention. A good plan means little until you begin.",
+                  "meaning": "Execution turns ideas into results.",
+                  "search": "person starting work"
               },
               {
-                  "proverb": "You can't have your cake and eat it too.",
-                  "meaning": "Some choices require accepting that you cannot keep every benefit at once.",
-                  "search": "cake decision choice"
+                  "text": "If you want peace, stop negotiating with every thought that enters your mind.",
+                  "meaning": "Not every thought deserves your attention.",
+                  "search": "meditation peaceful lake"
               },
               {
-                  "proverb": "Don't bite the hand that feeds you.",
-                  "meaning": "Respect the people and opportunities that genuinely support you.",
-                  "search": "helping hand support"
+                  "text": "You cannot control someone's opinion of you. But you can control whether their opinion controls you.",
+                  "meaning": "Other people's judgments only have power if you give them power.",
+                  "search": "person confident mountain"
               },
               {
-                  "proverb": "A watched pot never boils.",
-                  "meaning": "Constantly checking for an outcome can make waiting feel much longer.",
-                  "search": "waiting clock patience"
+                  "text": "Some things take longer because they are building roots deep enough to survive the future.",
+                  "meaning": "Slow progress can create stronger foundations.",
+                  "search": "tree roots forest growth"
               },
               {
-                  "proverb": "The grass is always greener where you water it.",
-                  "meaning": "What you consistently nurture is what has the best chance to grow.",
-                  "search": "watering plants garden growth"
+                  "text": "The person who knows what truly matters does not need to win every little thing.",
+                  "meaning": "Knowing your priorities makes small conflicts less important.",
+                  "search": "peaceful person sunset"
               },
               {
-                  "proverb": "Every dog has its day.",
-                  "meaning": "Everyone gets a chance to succeed or have their moment eventually.",
-                  "search": "dog sunset joyful nature"
+                  "text": "Your life can change quietly. One decision, one habit, one morning can become the beginning of everything.",
+                  "meaning": "Major change often begins with one small decision.",
+                  "search": "sunrise new beginning"
               },
               {
-                  "proverb": "Don't cry over spilled milk.",
-                  "meaning": "Once something cannot be changed, your energy is better spent moving forward.",
-                  "search": "spilled milk kitchen reflection"
-              },
-              {
-                  "proverb": "A picture is worth a thousand words.",
-                  "meaning": "Sometimes a single image can communicate what words struggle to explain.",
-                  "search": "photographer camera landscape"
-              },
-              {
-                  "proverb": "The truth will out.",
-                  "meaning": "Hidden facts have a way of becoming known eventually.",
-                  "search": "light through darkness truth"
-              },
-              {
-                  "proverb": "Good things come to those who wait.",
-                  "meaning": "Patience can be rewarded when the timing matters more than speed.",
-                  "search": "patience sunrise waiting nature"
-              },
-              {
-                  "proverb": "It's never too late to learn.",
-                  "meaning": "Growth does not have an expiration date.",
-                  "search": "older person learning books"
-              },
-              {
-                  "proverb": "What you seek is seeking you.",
-                  "meaning": "When you move with clarity and purpose, opportunities can become easier to recognize.",
-                  "search": "person walking horizon purpose"
-              },
-              {
-                  "proverb": "Not all who wander are lost.",
-                  "meaning": "A different path can still be meaningful even when it looks uncertain to others.",
-                  "search": "traveler forest path adventure"
-              },
-              {
-                  "proverb": "The journey matters more than the destination.",
-                  "meaning": "Who you become while pursuing a goal can matter as much as achieving it.",
-                  "search": "road journey mountains sunset"
+                  "text": "One day you will look back and realize the difficult road was taking you somewhere worth becoming.",
+                  "meaning": "The hardest path can sometimes create the strongest version of you.",
+                  "search": "difficult mountain road sunrise"
               }
           ]
 
@@ -304,31 +549,30 @@ jobs:
 
           selected = None
 
-          for item in proverbs:
-              if item["proverb"] not in used_set:
+          for item in sayings:
+              if item["text"] not in used_set:
                   selected = item
                   break
 
-          # Restart after all proverbs have been used
           if selected is None:
               used = []
-              selected = proverbs[0]
+              selected = sayings[0]
 
-          used.append(selected["proverb"])
+          used.append(selected["text"])
 
           with open(history_file, "w") as f:
               json.dump(used, f, indent=2)
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write("proverb=" + selected["proverb"] + "\n")
-              f.write("meaning=" + selected["meaning"] + "\n")
+              f.write("proverb=" + selected["text"].replace("\n", " ") + "\n")
+              f.write("meaning=" + selected["meaning"].replace("\n", " ") + "\n")
               f.write("search=" + selected["search"] + "\n")
 
-          print("Selected proverb:", selected["proverb"])
+          print("Selected wisdom:", selected["text"])
           print("Meaning:", selected["meaning"])
           print("Pexels search:", selected["search"])
           PY
-
+          
       - name: Save proverb history
         run: |
           git config user.name "github-actions[bot]"
@@ -429,7 +673,6 @@ jobs:
       - name: Create Reel video
         env:
           PROVERB: ${{ steps.proverb.outputs.proverb }}
-          MEANING: ${{ steps.proverb.outputs.meaning }}
         run: |
           python - <<'PY'
           import os
@@ -439,7 +682,6 @@ jobs:
           W, H = 1080, 1920
 
           proverb = os.environ["PROVERB"]
-          meaning = os.environ["MEANING"]
 
           img = Image.open("background.jpg").convert("RGB")
 
@@ -464,7 +706,6 @@ jobs:
               Image.Resampling.LANCZOS
           )
 
-          # Darken background
           overlay = Image.new(
               "RGBA",
               (W, H),
@@ -483,11 +724,6 @@ jobs:
               64
           )
 
-          meaning_font = ImageFont.truetype(
-              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-              38
-          )
-
           brand_font = ImageFont.truetype(
               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
               30
@@ -499,9 +735,7 @@ jobs:
               current = ""
 
               for word in words:
-                  test = (
-                      current + " " + word
-                  ).strip()
+                  test = (current + " " + word).strip()
 
                   box = draw.textbbox(
                       (0, 0),
@@ -521,32 +755,18 @@ jobs:
 
               return lines
 
-          # Proverb
           proverb_lines = wrap_text(
               proverb,
               proverb_font,
               850
           )
 
-          # Meaning
-          meaning_lines = wrap_text(
-              meaning,
-              meaning_font,
-              820
-          )
+          total_height = len(proverb_lines) * 82
 
-          total_proverb_height = len(proverb_lines) * 82
-          total_meaning_height = len(meaning_lines) * 55
-
-          total_height = (
-              total_proverb_height
-              + 80
-              + total_meaning_height
-          )
-
-          y = (H - total_height) // 2 - 30
+          y = (H - total_height) // 2
 
           for line in proverb_lines:
+
               box = draw.textbbox(
                   (0, 0),
                   line,
@@ -573,36 +793,6 @@ jobs:
 
               y += 82
 
-          y += 55
-
-          for line in meaning_lines:
-              box = draw.textbbox(
-                  (0, 0),
-                  line,
-                  font=meaning_font
-              )
-
-              width = box[2] - box[0]
-
-              x = (W - width) / 2
-
-              draw.text(
-                  (x + 2, y + 2),
-                  line,
-                  font=meaning_font,
-                  fill=(0, 0, 0, 180)
-              )
-
-              draw.text(
-                  (x, y),
-                  line,
-                  font=meaning_font,
-                  fill=(245, 245, 245)
-              )
-
-              y += 55
-
-          # Branding
           brand = "wisdom_gram"
 
           box = draw.textbbox(
@@ -645,7 +835,7 @@ jobs:
 
           print("Reel created successfully.")
           PY
-
+          
       - name: Upload Reel to Cloudinary
         id: cloudinary
         env:
@@ -687,12 +877,13 @@ jobs:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           PROVERB: ${{ steps.proverb.outputs.proverb }}
+          MEANING: ${{ steps.proverb.outputs.meaning }}
         run: |
           RESPONSE=$(curl -s -X POST \
             "https://graph.instagram.com/v15.0/${IG_USER_ID}/media" \
             -F "media_type=REELS" \
             -F "video_url=${{ steps.cloudinary.outputs.video_url }}" \
-            -F "caption=${PROVERB} #wisdom #proverbs #mindset #lifequotes #wisdomgram" \
+            -F "caption=${MEANING} #wisdom #proverbs #mindset #lifequotes #wisdomgram" \
             -F "share_to_feed=true" \
             -F "access_token=${IG_ACCESS_TOKEN}")
 
