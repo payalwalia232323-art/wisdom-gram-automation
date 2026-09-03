@@ -14,10 +14,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create image
-        run: |
-          pip install pillow
+      - name: Install dependencies
+        run: pip install pillow cloudinary
 
+      - name: Create test image
+        run: |
           python - <<'PY'
           from PIL import Image, ImageDraw, ImageFont
           import textwrap
@@ -39,49 +40,85 @@ jobs:
 
           for line in lines:
               box = draw.textbbox((0, 0), line, font=font)
-              w = box[2] - box[0]
-              draw.text(((1080-w)/2, y), line, font=font, fill="white")
+              width = box[2] - box[0]
+              draw.text(
+                  ((1080 - width) / 2, y),
+                  line,
+                  font=font,
+                  fill="white"
+              )
               y += 70
 
           brand = "wisdom_gram"
           box = draw.textbbox((0, 0), brand, font=small)
-          w = box[2] - box[0]
-          draw.text(((1080-w)/2, 930), brand, font=small, fill="white")
+          width = box[2] - box[0]
+
+          draw.text(
+              ((1080 - width) / 2, 930),
+              brand,
+              font=small,
+              fill="white"
+          )
 
           img.save("wisdom-test.jpg", "JPEG", quality=95)
           PY
 
-      - name: Publish image to GitHub Pages
+      - name: Upload image to Cloudinary
+        id: cloudinary
+        env:
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
         run: |
-          git config user.name "Wisdom Gram Bot"
-          git config user.email "actions@users.noreply.github.com"
+          python - <<'PY'
+          import cloudinary
+          import cloudinary.uploader
+          import os
 
-          git add wisdom-test.jpg
-          git commit -m "Add wisdom test image" || true
-          git push
+          cloudinary.config(
+              cloud_name=os.environ["CLOUDINARY_CLOUD_NAME"],
+              api_key=os.environ["CLOUDINARY_API_KEY"],
+              api_secret=os.environ["CLOUDINARY_API_SECRET"]
+          )
 
-      - name: Wait for GitHub Pages
-        run: sleep 90
+          result = cloudinary.uploader.upload(
+              "wisdom-test.jpg",
+              public_id="wisdom-gram/test-post",
+              overwrite=True,
+              resource_type="image"
+          )
+
+          print("Cloudinary URL:", result["secure_url"])
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("image_url=" + result["secure_url"] + "\n")
+          PY
 
       - name: Create Instagram media container
         id: container
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
         run: |
           RESPONSE=$(curl -s -X POST \
-            "https://graph.instagram.com/v15.0/${{ secrets.IG_USER_ID }}/media" \
-            -F "image_url=https://payawalia232323-art.github.io/wisdom-gram-automation/wisdom-test.jpg" \
+            "https://graph.instagram.com/v15.0/${IG_USER_ID}/media" \
+            -F "image_url=${{ steps.cloudinary.outputs.image_url }}" \
             -F "caption=Your future changes when your daily choices change. #wisdom #mindset #selfimprovement #wisdomgram" \
-            -F "access_token=${{ secrets.IG_ACCESS_TOKEN }}")
+            -F "access_token=${IG_ACCESS_TOKEN}")
 
           echo "$RESPONSE"
 
           CONTAINER_ID=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['id'])")
+
           echo "container_id=$CONTAINER_ID" >> "$GITHUB_OUTPUT"
 
       - name: Wait for Instagram container
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
         run: |
           for i in {1..12}; do
             STATUS=$(curl -s \
-              "https://graph.instagram.com/v15.0/${{ steps.container.outputs.container_id }}?fields=status_code&access_token=${{ secrets.IG_ACCESS_TOKEN }}")
+              "https://graph.instagram.com/v15.0/${{ steps.container.outputs.container_id }}?fields=status_code&access_token=${IG_ACCESS_TOKEN}")
 
             echo "$STATUS"
 
@@ -96,8 +133,13 @@ jobs:
           exit 1
 
       - name: Publish to Instagram
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
         run: |
-          curl -s -X POST \
-            "https://graph.instagram.com/v15.0/${{ secrets.IG_USER_ID }}/media_publish" \
+          RESPONSE=$(curl -s -X POST \
+            "https://graph.instagram.com/v15.0/${IG_USER_ID}/media_publish" \
             -F "creation_id=${{ steps.container.outputs.container_id }}" \
-            -F "access_token=${{ secrets.IG_ACCESS_TOKEN }}"
+            -F "access_token=${IG_ACCESS_TOKEN}")
+
+          echo "$RESPONSE"
