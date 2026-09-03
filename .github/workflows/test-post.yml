@@ -1,4 +1,4 @@
-name: Wisdom Gram AI Reel Test
+name: Wisdom Gram Free Reel Test
 
 on:
   workflow_dispatch:
@@ -18,95 +18,127 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-          pip install pillow cloudinary google-genai
+          pip install pillow cloudinary requests
 
-      - name: Generate AI background with Gemini
+      - name: Download relevant Pexels background
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: |
           python - <<'PY'
           import os
-          import base64
-          from google import genai
+          import requests
 
-          client = genai.Client(
-              api_key=os.environ["GEMINI_API_KEY"]
+          API_KEY = os.environ["PEXELS_API_KEY"]
+
+          # Test proverb
+          search_query = "old tree forest axe nature"
+
+          headers = {
+              "Authorization": API_KEY
+          }
+
+          params = {
+              "query": search_query,
+              "orientation": "portrait",
+              "per_page": 15
+          }
+
+          response = requests.get(
+              "https://api.pexels.com/v1/search",
+              headers=headers,
+              params=params,
+              timeout=30
           )
 
-          prompt = """
-          Create a cinematic vertical 9:16 background image for an Instagram
-          wisdom Reel.
+          response.raise_for_status()
 
-          The proverb is:
-          "The axe forgets, but the tree remembers."
+          data = response.json()
+          photos = data.get("photos", [])
 
-          Visual concept:
-          An old majestic tree in a quiet forest, with subtle signs that the
-          tree has endured damage from an axe in the past. A small axe can be
-          naturally present near the tree, but it should NOT dominate the image.
-          The atmosphere should communicate memory, consequences, resilience,
-          and the lasting impact of actions.
+          if not photos:
+              raise Exception("No suitable Pexels photos found.")
 
-          Style:
-          cinematic photography, realistic, emotional, premium Instagram
-          aesthetic, dramatic natural lighting, deep shadows, warm subtle
-          highlights, atmospheric depth, highly detailed.
+          # Pick the first suitable portrait image
+          selected = photos[0]
 
-          IMPORTANT:
-          Do NOT put any words, letters, quotes, captions, logos, typography,
-          watermark or text anywhere in the image.
-
-          Leave some visually calm/darker space around the center area so that
-          text can be added later.
-          """
-
-          interaction = client.interactions.create(
-              model="gemini-3.1-flash-image",
-              input=prompt,
-              response_format={
-                  "type": "image",
-                  "aspect_ratio": "9:16",
-                  "image_size": "1K"
-              }
+          image_url = (
+              selected["src"].get("large2x")
+              or selected["src"].get("large")
+              or selected["src"]["original"]
           )
 
-          image_data = interaction.output_image.data
+          print("Selected Pexels photo:", selected["id"])
+          print("Photo URL:", image_url)
 
-          with open("ai-background.png", "wb") as f:
-              f.write(base64.b64decode(image_data))
+          image_response = requests.get(
+              image_url,
+              timeout=60
+          )
 
-          print("AI background generated successfully.")
+          image_response.raise_for_status()
+
+          with open("background.jpg", "wb") as f:
+              f.write(image_response.content)
+
+          # Save source information
+          with open("pexels-source.txt", "w") as f:
+              f.write(
+                  "Photo by "
+                  + selected["photographer"]
+                  + " on Pexels\n"
+                  + selected["url"]
+              )
+
+          print("Background downloaded successfully.")
           PY
 
       - name: Create Reel video
         run: |
           python - <<'PY'
-          from PIL import Image, ImageDraw, ImageFont, ImageFilter
+          from PIL import Image, ImageDraw, ImageFont
           import subprocess
 
           W, H = 1080, 1920
 
-          # Load AI-generated background
-          img = Image.open("ai-background.png").convert("RGB")
+          # Load Pexels background
+          img = Image.open("background.jpg").convert("RGB")
 
-          # Cover crop to exact 9:16
+          # Crop image to exact 9:16
           target_ratio = W / H
           current_ratio = img.width / img.height
 
           if current_ratio > target_ratio:
               new_width = int(img.height * target_ratio)
               left = (img.width - new_width) // 2
-              img = img.crop((left, 0, left + new_width, img.height))
+
+              img = img.crop(
+                  (left, 0, left + new_width, img.height)
+              )
+
           else:
               new_height = int(img.width / target_ratio)
               top = (img.height - new_height) // 2
-              img = img.crop((0, top, img.width, top + new_height))
 
-          img = img.resize((W, H), Image.Resampling.LANCZOS)
+              img = img.crop(
+                  (0, top, img.width, top + new_height)
+              )
 
-          # Slight dark overlay to make text readable
-          overlay = Image.new("RGBA", (W, H), (0, 0, 0, 75))
-          img = Image.alpha_composite(img.convert("RGBA"), overlay)
+          img = img.resize(
+              (W, H),
+              Image.Resampling.LANCZOS
+          )
+
+          # Dark overlay for readable text
+          overlay = Image.new(
+              "RGBA",
+              (W, H),
+              (0, 0, 0, 85)
+          )
+
+          img = Image.alpha_composite(
+              img.convert("RGBA"),
+              overlay
+          )
 
           draw = ImageDraw.Draw(img)
 
@@ -125,27 +157,47 @@ jobs:
               30
           )
 
-          proverb = "The axe forgets,\nbut the tree remembers."
+          proverb = (
+              "The axe forgets,\n"
+              "but the tree remembers."
+          )
 
-          meaning = "Some wounds heal.\nSome simply teach you\nwho caused them."
+          meaning = (
+              "Some wounds heal.\n"
+              "Some simply teach you\n"
+              "who caused them."
+          )
 
-          # Draw proverb
-          y = 650
+          # Proverb
+          y = 640
 
           for line in proverb.split("\n"):
-              box = draw.textbbox((0, 0), line, font=font)
-              width = box[2] - box[0]
 
-              # subtle shadow
-              draw.text(
-                  ((W - width) / 2 + 3, y + 3),
+              box = draw.textbbox(
+                  (0, 0),
                   line,
-                  font=font,
-                  fill=(0, 0, 0, 180)
+                  font=font
               )
 
+              width = box[2] - box[0]
+
+              # Shadow
               draw.text(
-                  ((W - width) / 2, y),
+                  (
+                      (W - width) / 2 + 3,
+                      y + 3
+                  ),
+                  line,
+                  font=font,
+                  fill=(0, 0, 0, 190)
+              )
+
+              # Main text
+              draw.text(
+                  (
+                      (W - width) / 2,
+                      y
+                  ),
                   line,
                   font=font,
                   fill="white"
@@ -153,22 +205,34 @@ jobs:
 
               y += 92
 
-          # Draw meaning
-          y += 70
+          # Meaning
+          y += 65
 
           for line in meaning.split("\n"):
-              box = draw.textbbox((0, 0), line, font=meaning_font)
+
+              box = draw.textbbox(
+                  (0, 0),
+                  line,
+                  font=meaning_font
+              )
+
               width = box[2] - box[0]
 
               draw.text(
-                  ((W - width) / 2 + 2, y + 2),
+                  (
+                      (W - width) / 2 + 2,
+                      y + 2
+                  ),
                   line,
                   font=meaning_font,
                   fill=(0, 0, 0, 170)
               )
 
               draw.text(
-                  ((W - width) / 2, y),
+                  (
+                      (W - width) / 2,
+                      y
+                  ),
                   line,
                   font=meaning_font,
                   fill=(245, 245, 245)
@@ -179,17 +243,28 @@ jobs:
           # Branding
           brand = "wisdom_gram"
 
-          box = draw.textbbox((0, 0), brand, font=small)
+          box = draw.textbbox(
+              (0, 0),
+              brand,
+              font=small
+          )
+
           width = box[2] - box[0]
 
           draw.text(
-              ((W - width) / 2, 1770),
+              (
+                  (W - width) / 2,
+                  1770
+              ),
               brand,
               font=small,
               fill=(255, 255, 255, 220)
           )
 
-          img.convert("RGB").save("frame.jpg", quality=95)
+          img.convert("RGB").save(
+              "frame.jpg",
+              quality=95
+          )
 
           # Create 8-second Reel
           subprocess.run([
@@ -207,7 +282,7 @@ jobs:
               "wisdom-reel.mp4"
           ], check=True)
 
-          print("Reel video created successfully.")
+          print("Reel created successfully.")
           PY
 
       - name: Upload Reel to Cloudinary
@@ -230,15 +305,19 @@ jobs:
 
           result = cloudinary.uploader.upload(
               "wisdom-reel.mp4",
-              public_id="wisdom-gram/ai-reel-test",
+              public_id="wisdom-gram/free-reel-test",
               overwrite=True,
               resource_type="video"
           )
 
-          print("Cloudinary Reel URL:", result["secure_url"])
+          print("Cloudinary URL:", result["secure_url"])
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write("video_url=" + result["secure_url"] + "\n")
+              f.write(
+                  "video_url="
+                  + result["secure_url"]
+                  + "\n"
+              )
           PY
 
       - name: Create Instagram Reel container
