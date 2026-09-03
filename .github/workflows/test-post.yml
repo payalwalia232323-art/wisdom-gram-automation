@@ -1,9 +1,10 @@
-name: Wisdom Gram Free Reel Test
+name: Wisdom Gram Daily Reel
 
 on:
   workflow_dispatch:
 
   schedule:
+    # 6:00 PM IST = 12:30 PM UTC
     - cron: '30 12 * * *'
 
 permissions:
@@ -23,26 +24,345 @@ jobs:
           sudo apt-get install -y ffmpeg
           pip install pillow cloudinary requests
 
+      - name: Select next proverb
+        id: proverb
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          proverbs = [
+              {
+                  "proverb": "The axe forgets, but the tree remembers.",
+                  "meaning": "Some wounds heal. Some simply teach you who caused them.",
+                  "search": "old tree forest nature"
+              },
+              {
+                  "proverb": "A smooth sea never made a skilled sailor.",
+                  "meaning": "Difficult experiences build the strength that comfort never can.",
+                  "search": "sailor ocean storm sea"
+              },
+              {
+                  "proverb": "What goes around comes around.",
+                  "meaning": "The way you treat others often finds its way back to you.",
+                  "search": "circle road journey nature"
+              },
+              {
+                  "proverb": "Actions speak louder than words.",
+                  "meaning": "What you do reveals more about you than what you promise.",
+                  "search": "person action walking road"
+              },
+              {
+                  "proverb": "A stitch in time saves nine.",
+                  "meaning": "Small problems are easier to solve before they become big ones.",
+                  "search": "repair hands fixing object"
+              },
+              {
+                  "proverb": "Where there is a will, there is a way.",
+                  "meaning": "Determination can find a path where none seems to exist.",
+                  "search": "mountain path sunrise journey"
+              },
+              {
+                  "proverb": "Rome wasn't built in a day.",
+                  "meaning": "Anything meaningful takes patience, consistency, and time.",
+                  "search": "building architecture sunrise city"
+              },
+              {
+                  "proverb": "The grass is always greener on the other side.",
+                  "meaning": "We often overestimate what others have and underestimate what we already have.",
+                  "search": "green grass field landscape"
+              },
+              {
+                  "proverb": "Don't count your chickens before they hatch.",
+                  "meaning": "Hope for success, but don't treat an uncertain outcome as guaranteed.",
+                  "search": "farm morning nature eggs"
+              },
+              {
+                  "proverb": "You reap what you sow.",
+                  "meaning": "Your choices and habits eventually shape the results you receive.",
+                  "search": "farmer field planting seeds"
+              },
+              {
+                  "proverb": "Every cloud has a silver lining.",
+                  "meaning": "Even difficult situations can contain an unexpected opportunity.",
+                  "search": "clouds sunlight landscape"
+              },
+              {
+                  "proverb": "Slow and steady wins the race.",
+                  "meaning": "Consistent progress often beats short bursts of motivation.",
+                  "search": "tortoise nature path slow journey"
+              },
+              {
+                  "proverb": "Knowledge is power.",
+                  "meaning": "Understanding gives you better choices, better judgment, and greater control.",
+                  "search": "books library reading wisdom"
+              },
+              {
+                  "proverb": "Better late than never.",
+                  "meaning": "Starting late is still better than never starting at all.",
+                  "search": "sunrise road beginning journey"
+              },
+              {
+                  "proverb": "Look before you leap.",
+                  "meaning": "Think about the consequences before making an important decision.",
+                  "search": "cliff mountain decision landscape"
+              },
+              {
+                  "proverb": "The early bird catches the worm.",
+                  "meaning": "Being prepared and acting early can create opportunities others miss.",
+                  "search": "bird sunrise morning nature"
+              },
+              {
+                  "proverb": "A journey of a thousand miles begins with a single step.",
+                  "meaning": "Big achievements begin when you take the first small action.",
+                  "search": "long road traveler mountains"
+              },
+              {
+                  "proverb": "Empty vessels make the most noise.",
+                  "meaning": "People with little substance often feel the greatest need to prove themselves.",
+                  "search": "empty room person silhouette"
+              },
+              {
+                  "proverb": "Silence is golden.",
+                  "meaning": "Knowing when not to speak can be more valuable than having the last word.",
+                  "search": "quiet forest peaceful lake"
+              },
+              {
+                  "proverb": "The pen is mightier than the sword.",
+                  "meaning": "Ideas and words can create changes that force cannot.",
+                  "search": "writing desk pen dramatic light"
+              },
+              {
+                  "proverb": "If you want something done right, do it yourself.",
+                  "meaning": "For important work, personal responsibility can matter more than delegation.",
+                  "search": "person working alone craft"
+              },
+              {
+                  "proverb": "Necessity is the mother of invention.",
+                  "meaning": "Constraints often push people to discover creative solutions.",
+                  "search": "inventor workshop creative"
+              },
+              {
+                  "proverb": "No pain, no gain.",
+                  "meaning": "Meaningful improvement usually requires effort, discomfort, and persistence.",
+                  "search": "athlete training sunrise"
+              },
+              {
+                  "proverb": "Fortune favors the bold.",
+                  "meaning": "Courageous action can create opportunities that hesitation misses.",
+                  "search": "mountain climber adventure"
+              },
+              {
+                  "proverb": "Honesty is the best policy.",
+                  "meaning": "Truth may be difficult in the moment, but it builds lasting trust.",
+                  "search": "person reflection honest thoughtful"
+              },
+              {
+                  "proverb": "Time heals all wounds.",
+                  "meaning": "Distance and time can soften pain and help us see life differently.",
+                  "search": "sunset peaceful lake healing"
+              },
+              {
+                  "proverb": "The best things in life are free.",
+                  "meaning": "Some of life's greatest experiences cannot be bought with money.",
+                  "search": "family nature sunset happiness"
+              },
+              {
+                  "proverb": "A bird in the hand is worth two in the bush.",
+                  "meaning": "A certain opportunity can be more valuable than a risky promise of something better.",
+                  "search": "bird hand nature"
+              },
+              {
+                  "proverb": "Don't put all your eggs in one basket.",
+                  "meaning": "Spreading your risks can protect you when one plan fails.",
+                  "search": "baskets eggs farm"
+              },
+              {
+                  "proverb": "The darkest hour is just before the dawn.",
+                  "meaning": "The hardest moment may come just before circumstances begin to improve.",
+                  "search": "dark dawn sunrise horizon"
+              },
+              {
+                  "proverb": "A chain is only as strong as its weakest link.",
+                  "meaning": "A system is limited by the part that is least prepared or reliable.",
+                  "search": "metal chain closeup strength"
+              },
+              {
+                  "proverb": "You cannot judge a book by its cover.",
+                  "meaning": "Appearances reveal very little about a person's true character.",
+                  "search": "old books library mysterious"
+              },
+              {
+                  "proverb": "All that glitters is not gold.",
+                  "meaning": "Something attractive on the surface may have little real value.",
+                  "search": "gold reflection luxury illusion"
+              },
+              {
+                  "proverb": "When one door closes, another opens.",
+                  "meaning": "An ending can create an opportunity you could not see before.",
+                  "search": "open door light opportunity"
+              },
+              {
+                  "proverb": "Practice makes perfect.",
+                  "meaning": "Repeated effort turns weakness into skill.",
+                  "search": "musician practice instrument"
+              },
+              {
+                  "proverb": "United we stand, divided we fall.",
+                  "meaning": "Cooperation creates strength that individuals may not have alone.",
+                  "search": "people teamwork mountain"
+              },
+              {
+                  "proverb": "A fool and his money are soon parted.",
+                  "meaning": "Careless decisions can make money disappear surprisingly quickly.",
+                  "search": "money spending financial decision"
+              },
+              {
+                  "proverb": "Too many cooks spoil the broth.",
+                  "meaning": "Too much interference can make a simple task harder and less effective.",
+                  "search": "cooking kitchen teamwork"
+              },
+              {
+                  "proverb": "You can't have your cake and eat it too.",
+                  "meaning": "Some choices require accepting that you cannot keep every benefit at once.",
+                  "search": "cake decision choice"
+              },
+              {
+                  "proverb": "Don't bite the hand that feeds you.",
+                  "meaning": "Respect the people and opportunities that genuinely support you.",
+                  "search": "helping hand support"
+              },
+              {
+                  "proverb": "A watched pot never boils.",
+                  "meaning": "Constantly checking for an outcome can make waiting feel much longer.",
+                  "search": "waiting clock patience"
+              },
+              {
+                  "proverb": "The grass is always greener where you water it.",
+                  "meaning": "What you consistently nurture is what has the best chance to grow.",
+                  "search": "watering plants garden growth"
+              },
+              {
+                  "proverb": "Every dog has its day.",
+                  "meaning": "Everyone gets a chance to succeed or have their moment eventually.",
+                  "search": "dog sunset joyful nature"
+              },
+              {
+                  "proverb": "Don't cry over spilled milk.",
+                  "meaning": "Once something cannot be changed, your energy is better spent moving forward.",
+                  "search": "spilled milk kitchen reflection"
+              },
+              {
+                  "proverb": "A picture is worth a thousand words.",
+                  "meaning": "Sometimes a single image can communicate what words struggle to explain.",
+                  "search": "photographer camera landscape"
+              },
+              {
+                  "proverb": "The truth will out.",
+                  "meaning": "Hidden facts have a way of becoming known eventually.",
+                  "search": "light through darkness truth"
+              },
+              {
+                  "proverb": "Good things come to those who wait.",
+                  "meaning": "Patience can be rewarded when the timing matters more than speed.",
+                  "search": "patience sunrise waiting nature"
+              },
+              {
+                  "proverb": "It's never too late to learn.",
+                  "meaning": "Growth does not have an expiration date.",
+                  "search": "older person learning books"
+              },
+              {
+                  "proverb": "What you seek is seeking you.",
+                  "meaning": "When you move with clarity and purpose, opportunities can become easier to recognize.",
+                  "search": "person walking horizon purpose"
+              },
+              {
+                  "proverb": "Not all who wander are lost.",
+                  "meaning": "A different path can still be meaningful even when it looks uncertain to others.",
+                  "search": "traveler forest path adventure"
+              },
+              {
+                  "proverb": "The journey matters more than the destination.",
+                  "meaning": "Who you become while pursuing a goal can matter as much as achieving it.",
+                  "search": "road journey mountains sunset"
+              }
+          ]
+
+          history_file = "used_proverbs.json"
+
+          if os.path.exists(history_file):
+              try:
+                  with open(history_file, "r") as f:
+                      used = json.load(f)
+              except Exception:
+                  used = []
+          else:
+              used = []
+
+          used_set = set(used)
+
+          selected = None
+
+          for item in proverbs:
+              if item["proverb"] not in used_set:
+                  selected = item
+                  break
+
+          # Restart after all proverbs have been used
+          if selected is None:
+              used = []
+              selected = proverbs[0]
+
+          used.append(selected["proverb"])
+
+          with open(history_file, "w") as f:
+              json.dump(used, f, indent=2)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("proverb=" + selected["proverb"] + "\n")
+              f.write("meaning=" + selected["meaning"] + "\n")
+              f.write("search=" + selected["search"] + "\n")
+
+          print("Selected proverb:", selected["proverb"])
+          print("Meaning:", selected["meaning"])
+          print("Pexels search:", selected["search"])
+          PY
+
+      - name: Save proverb history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add used_proverbs.json
+
+          if git diff --cached --quiet; then
+            echo "No history changes."
+          else
+            git commit -m "Update used proverb history"
+            git push
+          fi
+
       - name: Download relevant Pexels background
         env:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          SEARCH_QUERY: ${{ steps.proverb.outputs.search }}
         run: |
           python - <<'PY'
           import os
           import requests
 
-          API_KEY = os.environ["PEXELS_API_KEY"]
-
-          # Test proverb
-          search_query = "old tree forest axe nature"
+          api_key = os.environ["PEXELS_API_KEY"]
+          query = os.environ["SEARCH_QUERY"]
 
           headers = {
-              "Authorization": API_KEY
+              "Authorization": api_key
           }
 
           params = {
-              "query": search_query,
+              "query": query,
               "orientation": "portrait",
+              "size": "large",
               "per_page": 15
           }
 
@@ -55,14 +375,26 @@ jobs:
 
           response.raise_for_status()
 
-          data = response.json()
-          photos = data.get("photos", [])
+          photos = response.json().get("photos", [])
 
           if not photos:
-              raise Exception("No suitable Pexels photos found.")
+              raise Exception(
+                  "No Pexels photos found for: " + query
+              )
 
-          # Pick the first suitable portrait image
-          selected = photos[0]
+          # Prefer photos with portrait dimensions
+          selected = None
+
+          for photo in photos:
+              width = photo.get("width", 0)
+              height = photo.get("height", 0)
+
+              if height >= width:
+                  selected = photo
+                  break
+
+          if selected is None:
+              selected = photos[0]
 
           image_url = (
               selected["src"].get("large2x")
@@ -71,7 +403,7 @@ jobs:
           )
 
           print("Selected Pexels photo:", selected["id"])
-          print("Photo URL:", image_url)
+          print("Photographer:", selected["photographer"])
 
           image_response = requests.get(
               image_url,
@@ -83,7 +415,6 @@ jobs:
           with open("background.jpg", "wb") as f:
               f.write(image_response.content)
 
-          # Save source information
           with open("pexels-source.txt", "w") as f:
               f.write(
                   "Photo by "
@@ -96,32 +427,34 @@ jobs:
           PY
 
       - name: Create Reel video
+        env:
+          PROVERB: ${{ steps.proverb.outputs.proverb }}
+          MEANING: ${{ steps.proverb.outputs.meaning }}
         run: |
           python - <<'PY'
+          import os
           from PIL import Image, ImageDraw, ImageFont
           import subprocess
 
           W, H = 1080, 1920
 
-          # Load Pexels background
+          proverb = os.environ["PROVERB"]
+          meaning = os.environ["MEANING"]
+
           img = Image.open("background.jpg").convert("RGB")
 
-          # Crop image to exact 9:16
           target_ratio = W / H
           current_ratio = img.width / img.height
 
           if current_ratio > target_ratio:
               new_width = int(img.height * target_ratio)
               left = (img.width - new_width) // 2
-
               img = img.crop(
                   (left, 0, left + new_width, img.height)
               )
-
           else:
               new_height = int(img.width / target_ratio)
               top = (img.height - new_height) // 2
-
               img = img.crop(
                   (0, top, img.width, top + new_height)
               )
@@ -131,11 +464,11 @@ jobs:
               Image.Resampling.LANCZOS
           )
 
-          # Dark overlay for readable text
+          # Darken background
           overlay = Image.new(
               "RGBA",
               (W, H),
-              (0, 0, 0, 85)
+              (0, 0, 0, 90)
           )
 
           img = Image.alpha_composite(
@@ -145,74 +478,104 @@ jobs:
 
           draw = ImageDraw.Draw(img)
 
-          font = ImageFont.truetype(
+          proverb_font = ImageFont.truetype(
               "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-              66
+              64
           )
 
           meaning_font = ImageFont.truetype(
               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-              40
+              38
           )
 
-          small = ImageFont.truetype(
+          brand_font = ImageFont.truetype(
               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
               30
           )
 
-          proverb = (
-              "The axe forgets,\n"
-              "but the tree remembers."
-          )
+          def wrap_text(text, font, max_width):
+              words = text.split()
+              lines = []
+              current = ""
 
-          meaning = (
-              "Some wounds heal.\n"
-              "Some simply teach you\n"
-              "who caused them."
-          )
+              for word in words:
+                  test = (
+                      current + " " + word
+                  ).strip()
+
+                  box = draw.textbbox(
+                      (0, 0),
+                      test,
+                      font=font
+                  )
+
+                  if box[2] - box[0] <= max_width:
+                      current = test
+                  else:
+                      if current:
+                          lines.append(current)
+                      current = word
+
+              if current:
+                  lines.append(current)
+
+              return lines
 
           # Proverb
-          y = 640
+          proverb_lines = wrap_text(
+              proverb,
+              proverb_font,
+              850
+          )
 
-          for line in proverb.split("\n"):
+          # Meaning
+          meaning_lines = wrap_text(
+              meaning,
+              meaning_font,
+              820
+          )
 
+          total_proverb_height = len(proverb_lines) * 82
+          total_meaning_height = len(meaning_lines) * 55
+
+          total_height = (
+              total_proverb_height
+              + 80
+              + total_meaning_height
+          )
+
+          y = (H - total_height) // 2 - 30
+
+          for line in proverb_lines:
               box = draw.textbbox(
                   (0, 0),
                   line,
-                  font=font
+                  font=proverb_font
               )
 
               width = box[2] - box[0]
 
-              # Shadow
+              x = (W - width) / 2
+
               draw.text(
-                  (
-                      (W - width) / 2 + 3,
-                      y + 3
-                  ),
+                  (x + 3, y + 3),
                   line,
-                  font=font,
-                  fill=(0, 0, 0, 190)
+                  font=proverb_font,
+                  fill=(0, 0, 0, 200)
               )
 
-              # Main text
               draw.text(
-                  (
-                      (W - width) / 2,
-                      y
-                  ),
+                  (x, y),
                   line,
-                  font=font,
+                  font=proverb_font,
                   fill="white"
               )
 
-              y += 92
+              y += 82
 
-          # Meaning
-          y += 65
+          y += 55
 
-          for line in meaning.split("\n"):
-
+          for line in meaning_lines:
               box = draw.textbbox(
                   (0, 0),
                   line,
@@ -221,27 +584,23 @@ jobs:
 
               width = box[2] - box[0]
 
+              x = (W - width) / 2
+
               draw.text(
-                  (
-                      (W - width) / 2 + 2,
-                      y + 2
-                  ),
+                  (x + 2, y + 2),
                   line,
                   font=meaning_font,
-                  fill=(0, 0, 0, 170)
+                  fill=(0, 0, 0, 180)
               )
 
               draw.text(
-                  (
-                      (W - width) / 2,
-                      y
-                  ),
+                  (x, y),
                   line,
                   font=meaning_font,
                   fill=(245, 245, 245)
               )
 
-              y += 58
+              y += 55
 
           # Branding
           brand = "wisdom_gram"
@@ -249,18 +608,18 @@ jobs:
           box = draw.textbbox(
               (0, 0),
               brand,
-              font=small
+              font=brand_font
           )
 
-          width = box[2] - box[0]
+          brand_width = box[2] - box[0]
 
           draw.text(
               (
-                  (W - width) / 2,
-                  1770
+                  (W - brand_width) / 2,
+                  1780
               ),
               brand,
-              font=small,
+              font=brand_font,
               fill=(255, 255, 255, 220)
           )
 
@@ -269,7 +628,6 @@ jobs:
               quality=95
           )
 
-          # Create 8-second Reel
           subprocess.run([
               "ffmpeg",
               "-y",
@@ -308,7 +666,7 @@ jobs:
 
           result = cloudinary.uploader.upload(
               "wisdom-reel.mp4",
-              public_id="wisdom-gram/free-reel-test",
+              public_id="wisdom-gram/daily-reel",
               overwrite=True,
               resource_type="video"
           )
@@ -328,12 +686,13 @@ jobs:
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          PROVERB: ${{ steps.proverb.outputs.proverb }}
         run: |
           RESPONSE=$(curl -s -X POST \
             "https://graph.instagram.com/v15.0/${IG_USER_ID}/media" \
             -F "media_type=REELS" \
             -F "video_url=${{ steps.cloudinary.outputs.video_url }}" \
-            -F "caption=The axe forgets, but the tree remembers. Some wounds heal. Some simply teach you who caused them. #wisdom #proverbs #mindset #lifequotes #wisdomgram" \
+            -F "caption=${PROVERB} #wisdom #proverbs #mindset #lifequotes #wisdomgram" \
             -F "share_to_feed=true" \
             -F "access_token=${IG_ACCESS_TOKEN}")
 
