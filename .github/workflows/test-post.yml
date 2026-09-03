@@ -1,0 +1,103 @@
+name: Wisdom Gram Test Post
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  post-to-instagram:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create image
+        run: |
+          pip install pillow
+
+          python - <<'PY'
+          from PIL import Image, ImageDraw, ImageFont
+          import textwrap
+
+          img = Image.new("RGB", (1080, 1080), (20, 20, 20))
+          draw = ImageDraw.Draw(img)
+
+          font = ImageFont.truetype(
+              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 48
+          )
+          small = ImageFont.truetype(
+              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28
+          )
+
+          quote = "Your future changes when your daily choices change."
+
+          lines = textwrap.wrap(quote, width=30)
+          y = 390
+
+          for line in lines:
+              box = draw.textbbox((0, 0), line, font=font)
+              w = box[2] - box[0]
+              draw.text(((1080-w)/2, y), line, font=font, fill="white")
+              y += 70
+
+          brand = "wisdom_gram"
+          box = draw.textbbox((0, 0), brand, font=small)
+          w = box[2] - box[0]
+          draw.text(((1080-w)/2, 930), brand, font=small, fill="white")
+
+          img.save("wisdom-test.jpg", "JPEG", quality=95)
+          PY
+
+      - name: Publish image to GitHub Pages
+        run: |
+          git config user.name "Wisdom Gram Bot"
+          git config user.email "actions@users.noreply.github.com"
+
+          git add wisdom-test.jpg
+          git commit -m "Add wisdom test image" || true
+          git push
+
+      - name: Wait for GitHub Pages
+        run: sleep 90
+
+      - name: Create Instagram media container
+        id: container
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            "https://graph.instagram.com/v15.0/${{ secrets.IG_USER_ID }}/media" \
+            -F "image_url=https://payawalia232323-art.github.io/wisdom-gram-automation/wisdom-test.jpg" \
+            -F "caption=Your future changes when your daily choices change. #wisdom #mindset #selfimprovement #wisdomgram" \
+            -F "access_token=${{ secrets.IG_ACCESS_TOKEN }}")
+
+          echo "$RESPONSE"
+
+          CONTAINER_ID=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['id'])")
+          echo "container_id=$CONTAINER_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Instagram container
+        run: |
+          for i in {1..12}; do
+            STATUS=$(curl -s \
+              "https://graph.instagram.com/v15.0/${{ steps.container.outputs.container_id }}?fields=status_code&access_token=${{ secrets.IG_ACCESS_TOKEN }}")
+
+            echo "$STATUS"
+
+            if echo "$STATUS" | grep -q "FINISHED"; then
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Instagram container was not ready."
+          exit 1
+
+      - name: Publish to Instagram
+        run: |
+          curl -s -X POST \
+            "https://graph.instagram.com/v15.0/${{ secrets.IG_USER_ID }}/media_publish" \
+            -F "creation_id=${{ steps.container.outputs.container_id }}" \
+            -F "access_token=${{ secrets.IG_ACCESS_TOKEN }}"
