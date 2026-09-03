@@ -1,4 +1,4 @@
-name: Wisdom Gram Test Post
+name: Wisdom Gram Reel Test
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 jobs:
-  post-to-instagram:
+  create-and-publish-reel:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,55 +15,91 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: pip install pillow cloudinary
+        run: |
+          pip install pillow cloudinary moviepy
 
-      - name: Create test image
+      - name: Create Reel video
         run: |
           python - <<'PY'
           from PIL import Image, ImageDraw, ImageFont
-          import textwrap
+          import subprocess
 
-          img = Image.new("RGB", (1080, 1080), (20, 20, 20))
+          W, H = 1080, 1920
+
+          img = Image.new("RGB", (W, H), (18, 18, 18))
           draw = ImageDraw.Draw(img)
 
           font = ImageFont.truetype(
-              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 48
+              "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+              62
           )
+
           small = ImageFont.truetype(
-              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28
+              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+              32
           )
 
-          quote = "Your future changes when your daily choices change."
+          quote = "The axe forgets, but the tree remembers."
 
-          lines = textwrap.wrap(quote, width=30)
-          y = 390
+          words = quote.split()
+          lines = []
+          current = ""
+
+          for word in words:
+              test = (current + " " + word).strip()
+              if draw.textbbox((0, 0), test, font=font)[2] <= 850:
+                  current = test
+              else:
+                  lines.append(current)
+                  current = word
+
+          if current:
+              lines.append(current)
+
+          y = 760
 
           for line in lines:
               box = draw.textbbox((0, 0), line, font=font)
               width = box[2] - box[0]
+
               draw.text(
-                  ((1080 - width) / 2, y),
+                  ((W - width) / 2, y),
                   line,
                   font=font,
                   fill="white"
               )
-              y += 70
+
+              y += 95
 
           brand = "wisdom_gram"
+
           box = draw.textbbox((0, 0), brand, font=small)
           width = box[2] - box[0]
 
           draw.text(
-              ((1080 - width) / 2, 930),
+              ((W - width) / 2, 1720),
               brand,
               font=small,
               fill="white"
           )
 
-          img.save("wisdom-test.jpg", "JPEG", quality=95)
+          img.save("frame.png")
+
+          subprocess.run([
+              "ffmpeg",
+              "-y",
+              "-loop", "1",
+              "-i", "frame.png",
+              "-t", "8",
+              "-r", "30",
+              "-vf", "format=yuv420p",
+              "-c:v", "libx264",
+              "-movflags", "+faststart",
+              "wisdom-reel.mp4"
+          ], check=True)
           PY
 
-      - name: Upload image to Cloudinary
+      - name: Upload Reel to Cloudinary
         id: cloudinary
         env:
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
@@ -82,19 +118,19 @@ jobs:
           )
 
           result = cloudinary.uploader.upload(
-              "wisdom-test.jpg",
-              public_id="wisdom-gram/test-post",
+              "wisdom-reel.mp4",
+              public_id="wisdom-gram/reel-test",
               overwrite=True,
-              resource_type="image"
+              resource_type="video"
           )
 
-          print("Cloudinary URL:", result["secure_url"])
+          print("Cloudinary Reel URL:", result["secure_url"])
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write("image_url=" + result["secure_url"] + "\n")
+              f.write("video_url=" + result["secure_url"] + "\n")
           PY
 
-      - name: Create Instagram media container
+      - name: Create Instagram Reel container
         id: container
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
@@ -102,8 +138,10 @@ jobs:
         run: |
           RESPONSE=$(curl -s -X POST \
             "https://graph.instagram.com/v15.0/${IG_USER_ID}/media" \
-            -F "image_url=${{ steps.cloudinary.outputs.image_url }}" \
-            -F "caption=Your future changes when your daily choices change. #wisdom #mindset #selfimprovement #wisdomgram" \
+            -F "media_type=REELS" \
+            -F "video_url=${{ steps.cloudinary.outputs.video_url }}" \
+            -F "caption=The axe forgets, but the tree remembers. #wisdom #proverbs #mindset #lifequotes #wisdomgram" \
+            -F "share_to_feed=true" \
             -F "access_token=${IG_ACCESS_TOKEN}")
 
           echo "$RESPONSE"
@@ -112,27 +150,34 @@ jobs:
 
           echo "container_id=$CONTAINER_ID" >> "$GITHUB_OUTPUT"
 
-      - name: Wait for Instagram container
+      - name: Wait for Reel processing
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
         run: |
-          for i in {1..12}; do
-            STATUS=$(curl -s \
-              "https://graph.instagram.com/v15.0/${{ steps.container.outputs.container_id }}?fields=status_code&access_token=${IG_ACCESS_TOKEN}")
+          for i in {1..18}; do
 
-            echo "$STATUS"
+            RESPONSE=$(curl -s \
+              "https://graph.instagram.com/v15.0/${{ steps.container.outputs.container_id }}?fields=status_code,status&access_token=${IG_ACCESS_TOKEN}")
 
-            if echo "$STATUS" | grep -q "FINISHED"; then
+            echo "$RESPONSE"
+
+            if echo "$RESPONSE" | grep -q '"status_code":"FINISHED"'; then
+              echo "Reel is ready."
               exit 0
+            fi
+
+            if echo "$RESPONSE" | grep -q '"status_code":"ERROR"'; then
+              echo "Instagram rejected the Reel."
+              exit 1
             fi
 
             sleep 10
           done
 
-          echo "Instagram container was not ready."
+          echo "Reel processing timed out."
           exit 1
 
-      - name: Publish to Instagram
+      - name: Publish Reel
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
