@@ -3,6 +3,9 @@ name: Wisdom Gram Free Reel Test
 on:
   workflow_dispatch:
 
+  schedule:
+    - cron: '30 12 * * *'
+
 permissions:
   contents: write
 
