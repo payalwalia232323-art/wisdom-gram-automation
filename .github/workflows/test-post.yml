@@ -16,7 +16,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pillow cloudinary moviepy
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          pip install pillow cloudinary
 
       - name: Create Reel video
         run: |
