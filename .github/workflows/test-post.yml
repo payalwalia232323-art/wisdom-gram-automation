@@ -1,4 +1,4 @@
-name: Wisdom Gram Reel Test
+name: Wisdom Gram AI Reel Test
 
 on:
   workflow_dispatch:
@@ -18,51 +18,131 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-          pip install pillow cloudinary
+          pip install pillow cloudinary google-genai
+
+      - name: Generate AI background with Gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          import base64
+          from google import genai
+
+          client = genai.Client(
+              api_key=os.environ["GEMINI_API_KEY"]
+          )
+
+          prompt = """
+          Create a cinematic vertical 9:16 background image for an Instagram
+          wisdom Reel.
+
+          The proverb is:
+          "The axe forgets, but the tree remembers."
+
+          Visual concept:
+          An old majestic tree in a quiet forest, with subtle signs that the
+          tree has endured damage from an axe in the past. A small axe can be
+          naturally present near the tree, but it should NOT dominate the image.
+          The atmosphere should communicate memory, consequences, resilience,
+          and the lasting impact of actions.
+
+          Style:
+          cinematic photography, realistic, emotional, premium Instagram
+          aesthetic, dramatic natural lighting, deep shadows, warm subtle
+          highlights, atmospheric depth, highly detailed.
+
+          IMPORTANT:
+          Do NOT put any words, letters, quotes, captions, logos, typography,
+          watermark or text anywhere in the image.
+
+          Leave some visually calm/darker space around the center area so that
+          text can be added later.
+          """
+
+          interaction = client.interactions.create(
+              model="gemini-3.1-flash-image",
+              input=prompt,
+              response_format={
+                  "type": "image",
+                  "aspect_ratio": "9:16",
+                  "image_size": "1K"
+              }
+          )
+
+          image_data = interaction.output_image.data
+
+          with open("ai-background.png", "wb") as f:
+              f.write(base64.b64decode(image_data))
+
+          print("AI background generated successfully.")
+          PY
 
       - name: Create Reel video
         run: |
           python - <<'PY'
-          from PIL import Image, ImageDraw, ImageFont
+          from PIL import Image, ImageDraw, ImageFont, ImageFilter
           import subprocess
 
           W, H = 1080, 1920
 
-          img = Image.new("RGB", (W, H), (18, 18, 18))
+          # Load AI-generated background
+          img = Image.open("ai-background.png").convert("RGB")
+
+          # Cover crop to exact 9:16
+          target_ratio = W / H
+          current_ratio = img.width / img.height
+
+          if current_ratio > target_ratio:
+              new_width = int(img.height * target_ratio)
+              left = (img.width - new_width) // 2
+              img = img.crop((left, 0, left + new_width, img.height))
+          else:
+              new_height = int(img.width / target_ratio)
+              top = (img.height - new_height) // 2
+              img = img.crop((0, top, img.width, top + new_height))
+
+          img = img.resize((W, H), Image.Resampling.LANCZOS)
+
+          # Slight dark overlay to make text readable
+          overlay = Image.new("RGBA", (W, H), (0, 0, 0, 75))
+          img = Image.alpha_composite(img.convert("RGBA"), overlay)
+
           draw = ImageDraw.Draw(img)
 
           font = ImageFont.truetype(
               "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-              62
+              66
+          )
+
+          meaning_font = ImageFont.truetype(
+              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+              40
           )
 
           small = ImageFont.truetype(
               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-              32
+              30
           )
 
-          quote = "The axe forgets, but the tree remembers."
+          proverb = "The axe forgets,\nbut the tree remembers."
 
-          words = quote.split()
-          lines = []
-          current = ""
+          meaning = "Some wounds heal.\nSome simply teach you\nwho caused them."
 
-          for word in words:
-              test = (current + " " + word).strip()
-              if draw.textbbox((0, 0), test, font=font)[2] <= 850:
-                  current = test
-              else:
-                  lines.append(current)
-                  current = word
+          # Draw proverb
+          y = 650
 
-          if current:
-              lines.append(current)
-
-          y = 760
-
-          for line in lines:
+          for line in proverb.split("\n"):
               box = draw.textbbox((0, 0), line, font=font)
               width = box[2] - box[0]
+
+              # subtle shadow
+              draw.text(
+                  ((W - width) / 2 + 3, y + 3),
+                  line,
+                  font=font,
+                  fill=(0, 0, 0, 180)
+              )
 
               draw.text(
                   ((W - width) / 2, y),
@@ -71,34 +151,63 @@ jobs:
                   fill="white"
               )
 
-              y += 95
+              y += 92
 
+          # Draw meaning
+          y += 70
+
+          for line in meaning.split("\n"):
+              box = draw.textbbox((0, 0), line, font=meaning_font)
+              width = box[2] - box[0]
+
+              draw.text(
+                  ((W - width) / 2 + 2, y + 2),
+                  line,
+                  font=meaning_font,
+                  fill=(0, 0, 0, 170)
+              )
+
+              draw.text(
+                  ((W - width) / 2, y),
+                  line,
+                  font=meaning_font,
+                  fill=(245, 245, 245)
+              )
+
+              y += 58
+
+          # Branding
           brand = "wisdom_gram"
 
           box = draw.textbbox((0, 0), brand, font=small)
           width = box[2] - box[0]
 
           draw.text(
-              ((W - width) / 2, 1720),
+              ((W - width) / 2, 1770),
               brand,
               font=small,
-              fill="white"
+              fill=(255, 255, 255, 220)
           )
 
-          img.save("frame.png")
+          img.convert("RGB").save("frame.jpg", quality=95)
 
+          # Create 8-second Reel
           subprocess.run([
               "ffmpeg",
               "-y",
               "-loop", "1",
-              "-i", "frame.png",
+              "-i", "frame.jpg",
               "-t", "8",
               "-r", "30",
               "-vf", "format=yuv420p",
               "-c:v", "libx264",
+              "-preset", "medium",
+              "-crf", "20",
               "-movflags", "+faststart",
               "wisdom-reel.mp4"
           ], check=True)
+
+          print("Reel video created successfully.")
           PY
 
       - name: Upload Reel to Cloudinary
@@ -121,7 +230,7 @@ jobs:
 
           result = cloudinary.uploader.upload(
               "wisdom-reel.mp4",
-              public_id="wisdom-gram/reel-test",
+              public_id="wisdom-gram/ai-reel-test",
               overwrite=True,
               resource_type="video"
           )
@@ -142,7 +251,7 @@ jobs:
             "https://graph.instagram.com/v15.0/${IG_USER_ID}/media" \
             -F "media_type=REELS" \
             -F "video_url=${{ steps.cloudinary.outputs.video_url }}" \
-            -F "caption=The axe forgets, but the tree remembers. #wisdom #proverbs #mindset #lifequotes #wisdomgram" \
+            -F "caption=The axe forgets, but the tree remembers. Some wounds heal. Some simply teach you who caused them. #wisdom #proverbs #mindset #lifequotes #wisdomgram" \
             -F "share_to_feed=true" \
             -F "access_token=${IG_ACCESS_TOKEN}")
 
@@ -156,7 +265,7 @@ jobs:
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
         run: |
-          for i in {1..18}; do
+          for i in {1..24}; do
 
             RESPONSE=$(curl -s \
               "https://graph.instagram.com/v15.0/${{ steps.container.outputs.container_id }}?fields=status_code,status&access_token=${IG_ACCESS_TOKEN}")
